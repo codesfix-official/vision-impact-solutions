@@ -1,0 +1,128 @@
+/* Leaders Grid Styles */
+.leaders-grid-wrapper {
+    padding: 40px 20px;
+    background: white;
+}
+
+.leaders-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 40px;
+    padding: 0 20px;
+}
+
+.leader-card {
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.leader-card:hover {
+    transform: translateY(-10px);
+}
+
+.leader-image {
+    margin-bottom: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f0f0f0;
+/*     aspect-ratio: 1; */
+}
+
+.leader-image-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.leader-image-link:hover img {
+    transform: scale(1.05);
+}
+
+.leader-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.leader-image-placeholder {
+    width: 100%;
+    height: 100%;
+    background: #e8e8e8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leader-info h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.leader-info h3 a {
+    color: #4a6fa5 !important;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.leader-info h3 a:hover {
+    color: #5a82b4;
+}
+
+.leader-arrow {
+    color: #4a6fa5 !important;
+    transition: margin-left 0.3s ease;
+}
+
+.leader-info h3 a:hover + .leader-arrow,
+.leader-info h3:hover .leader-arrow {
+    margin-left: 5px;
+}
+
+.leader-position {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a6fa5 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .leaders-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 30px;
+    }
+
+    .leader-position {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .leaders-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding: 0;
+    }
+
+    .leaders-grid-wrapper {
+        padding: 20px 10px;
+    }
+
+    .leader-image {
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+
+    .leader-info h3 {
+        font-size: 16px;
+    }
+}

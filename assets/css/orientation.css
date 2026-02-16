@@ -1,0 +1,514 @@
+/**
+ * Orientation Styles
+ *
+ * @package VisionImpactCustomSolutions
+ * @since 1.0.0
+ */
+
+/* Orientation Overlay */
+.vics-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(2px);
+}
+
+/* Prevent body scrolling when overlay is active */
+body.vics-overlay-active {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+.vics-popup-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.vics-popup-header {
+    padding: 30px 40px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    background-color: #26B4CF;
+    color: #fff;
+    border-radius: 12px 12px 0 0;
+}
+
+.vics-popup-header h2 {
+    margin: 0 0 10px !important;
+    font-size: 48px !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+}
+
+.vics-popup-header p {
+    margin: 0;
+    color: #fff !important;
+    font-size: 16px;
+}
+
+.vics-user-greeting {
+    color: #3182ce !important;
+    font-weight: 500;
+}
+
+.vics-popup-body {
+    padding: 30px 40px;
+}
+
+.vics-description {
+    margin-bottom: 30px;
+}
+
+.vics-description p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #4a5568;
+}
+
+/* Checklist */
+.vics-checklist {
+    margin-bottom: 30px;
+}
+
+.vics-checklist-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.vics-checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.vics-double-check-icon {
+    color: #26b4cf;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.vics-checklist-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #2d3748;
+    margin: 0;
+}
+
+/* Form Elements */
+.vics-checkbox-field {
+    margin-bottom: 30px;
+}
+
+.vics-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #4a5568;
+}
+
+.vics-checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #cbd5e0;
+    border-radius: 4px;
+    position: relative;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.2s;
+}
+
+.vics-checkbox-label input[type="checkbox"]:checked + .vics-checkbox-custom {
+    background: #3182ce;
+    border-color: #3182ce;
+}
+
+.vics-checkbox-label input[type="checkbox"]:checked + .vics-checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.vics-checkbox-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Buttons */
+.vics-form-actions {
+    text-align: center;
+}
+
+.vics-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 12px 24px !important;
+    border: none !important;
+    border-radius: 0px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+}
+
+.vics-btn-primary {
+    background: #3182ce;
+    color: white;
+}
+
+.vics-btn-primary:hover {
+    background: #2c5282 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3) !important;
+}
+
+.vics-btn-arrow {
+    font-size: 18px;
+}
+
+/* Video Container */
+.vics-video-container {
+    margin-bottom: 20px;
+    text-align: center;
+    position: relative;
+}
+
+#vics-youtube-player,
+#vics-vimeo-player {
+    width: 100%;
+    max-width: 560px;
+    height: 315px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#vics-html5-player {
+    width: 100%;
+    max-width: 560px;
+    border-radius: 8px;
+}
+
+/* Custom Controls for All Video Types */
+.vics-custom-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    backdrop-filter: blur(5px);
+}
+
+.vics-custom-controls .vics-btn {
+    margin: 0;
+    min-width: 40px;
+    height: 40px;
+    padding: 8px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vics-volume-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vics-volume-control .vics-btn {
+    min-width: 35px;
+    height: 35px;
+    font-size: 14px;
+}
+
+#vics-volume-slider {
+    width: 80px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+#vics-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #3182ce;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#vics-volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #3182ce;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.vics-speed-control select {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #333;
+    cursor: pointer;
+}
+
+.vics-speed-control select:focus {
+    outline: none;
+    border-color: #3182ce;
+}
+
+.vics-no-video {
+    padding: 40px;
+    background: #f7fafc;
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    color: #a0aec0;
+    font-size: 16px;
+}
+
+/* Video Notice */
+.vics-video-notice {
+    background: #fef5e7;
+    border: 1px solid #f6ad55;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+}
+
+.vics-video-notice p {
+    margin: 0;
+    color: #c05621;
+    font-size: 14px;
+}
+
+.vics-resume-notice {
+    color: #3182ce !important;
+}
+
+/* Playbook Download Section */
+.vics-playbook-section {
+    margin-bottom: 20px;
+}
+
+.vics-playbook-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.vics-playbook-content:hover {
+    border-color: #26b4cf;
+    box-shadow: 0 2px 8px rgba(38, 180, 207, 0.1);
+}
+
+.vics-playbook-icon {
+    flex-shrink: 0;
+    color: #26b4cf;
+}
+
+.vics-playbook-info {
+    flex: 1;
+}
+
+.vics-playbook-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.vics-playbook-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #718096;
+    line-height: 1.4;
+}
+
+.vics-playbook-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #26b4cf;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    border: 1px solid #26b4cf;
+}
+
+.vics-playbook-download:hover {
+    background: #1e9bb8;
+	color: #fff;
+    border-color: #1e9bb8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(38, 180, 207, 0.3);
+}
+
+.vics-playbook-download:active {
+    transform: translateY(0);
+}
+
+/* Mobile Responsiveness for Playbook Section */
+@media (max-width: 768px) {
+    .vics-playbook-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .vics-playbook-icon {
+        align-self: center;
+    }
+
+    .vics-playbook-info h4 {
+        font-size: 15px;
+    }
+
+    .vics-playbook-info p {
+        font-size: 13px;
+    }
+
+    .vics-playbook-download {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 16px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .vics-playbook-content {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .vics-playbook-info h4 {
+        font-size: 14px;
+    }
+
+    .vics-playbook-info p {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    .vics-playbook-download {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+}
+
+/* Steps */
+.vics-step {
+    display: none;
+}
+
+.vics-step.active {
+    display: block;
+}
+
+/* Success State */
+.vics-success {
+    background: linear-gradient(135deg, #488dbb, #387aa1);
+    color: white;
+}
+
+.vics-success h2 {
+    color: white;
+}
+
+.vics-success-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    margin-bottom: 20px;
+}
+
+.vics-welcome-message {
+    font-size: 18px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .vics-popup-container {
+        width: 95%;
+        margin: 20px;
+    }
+
+    .vics-popup-header,
+    .vics-popup-body {
+        padding: 20px;
+    }
+
+    .vics-popup-header h2 {
+        font-size: 20px;
+    }
+
+    #vics-youtube-player,
+    #vics-vimeo-player {
+        height: 250px;
+    }
+}
+
+/* Body class for orientation required */
+body.vics-orientation-required {
+    overflow: hidden;
+}

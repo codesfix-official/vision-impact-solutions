@@ -1,0 +1,23 @@
+{
+    "name": "vision-impact/vision-impact-custom-solutions",
+    "description": "Complete agent management system with orientation, profile management, license tracking, and Google Sheets integration",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=7.4",
+        "google/apiclient": "^2.15",
+        "google/apiclient-services": "^0.426.0"
+    },
+    "extra": {
+        "google/apiclient-services": [
+            "Sheets",
+            "Drive",
+            "Oauth2"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "google/apiclient-services": true
+        }
+    }
+}

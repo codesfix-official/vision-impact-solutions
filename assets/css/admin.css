@@ -1,0 +1,397 @@
+/**
+ * Admin Styles
+ *
+ * @package VisionImpactCustomSolutions
+ * @since 1.0.0
+ */
+
+.vics-admin-wrap {
+    margin: 20px 0;
+}
+
+.vics-admin-wrap h1 {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+/* Navigation Tabs */
+.nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.nav-tab {
+    margin-right: 4px;
+    border: 1px solid #ccc;
+    background: #f1f1f1;
+    color: #555;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.2s;
+}
+
+.nav-tab-active,
+.nav-tab:hover {
+    background: #fff;
+    border-bottom-color: #fff;
+    color: #000;
+}
+
+/* Admin Sections */
+.vics-admin-section {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.vics-admin-section h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    color: #23282d;
+}
+
+/* Form Table */
+.form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+    vertical-align: top;
+}
+
+.form-table td {
+    padding: 15px 10px;
+}
+
+.form-table input[type="text"],
+.form-table input[type="url"],
+.form-table input[type="number"],
+.form-table textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+.form-table textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+/* List Items Management */
+.vics-list-items {
+    max-width: 600px;
+}
+
+.vics-sortable-list {
+    margin: 10px 0;
+}
+
+.vics-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.vics-sort-handle {
+    cursor: move;
+    color: #999;
+    font-size: 16px;
+    padding: 0 5px;
+}
+
+.vics-list-item-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.vics-remove-list-item {
+    background: #dc3232;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.vics-remove-list-item:hover {
+    background: #c91717;
+}
+
+.vics-add-list-item {
+    background: #007cba;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 12px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.vics-add-list-item:hover {
+    background: #005a87;
+}
+
+/* Agents List */
+.agents-list {
+    margin-top: 20px;
+}
+
+.agents-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border: 1px solid #ccc;
+}
+
+.agents-list th,
+.agents-list td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.agents-list th {
+    background: #f1f1f1;
+    font-weight: 600;
+}
+
+.agents-list .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.agents-list .orientation-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.agents-list .status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.agents-list .status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.agents-list .status-not-started {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.agents-list .actions {
+    white-space: nowrap;
+}
+
+.agents-list .actions a {
+    margin-right: 8px;
+    text-decoration: none;
+    color: #007cba;
+}
+
+.agents-list .actions a:hover {
+    color: #005a87;
+}
+
+/* Orientation Report */
+.orientation-report {
+    margin-top: 20px;
+}
+
+.report-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.report-card {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+}
+
+.report-card h3 {
+    margin: 0 0 10px;
+    font-size: 36px;
+    color: #23282d;
+}
+
+.report-card p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.report-chart {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.report-chart h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Submit Button */
+.vics-admin-section .submit {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+/* Notices */
+.notice {
+    border-left: 4px solid #00a0d2;
+    padding: 12px 16px;
+    margin: 20px 0;
+    background: #f0f8ff;
+}
+
+.notice p {
+    margin: 0;
+}
+
+/* Status Badges */
+.vics-status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vics-status-active {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.vics-status-pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.vics-status-expired {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.vics-status-suspended {
+    background: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .vics-admin-section {
+        margin: 0 -12px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .form-table th {
+        width: 100%;
+        display: block;
+        padding-bottom: 5px;
+    }
+
+    .form-table td {
+        width: 100%;
+        display: block;
+        padding-top: 5px;
+    }
+
+    .agents-list table {
+        font-size: 14px;
+    }
+
+    .agents-list th,
+    .agents-list td {
+        padding: 8px 4px;
+    }
+
+    .report-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Birthdays Table Styles */
+.vics-birthdays-table-wrapper {
+    margin: 20px 0;
+    overflow-x: auto;
+}
+
+.vics-birthdays-table-wrapper table {
+    min-width: 600px;
+}
+
+.vics-days-remaining {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.vics-days-remaining.vics-urgent {
+    color: #d63638;
+}
+
+.vics-birthdays-summary {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.vics-birthdays-summary h3 {
+    margin-top: 0;
+    color: #23282d;
+}
+
+.vics-no-birthdays {
+    text-align: center;
+    padding: 40px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #666;
+}
+
+.vics-no-birthdays p {
+    margin: 0;
+    font-size: 16px;
+}
+
+.vics-no-birthdays .description {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #888;
+}
