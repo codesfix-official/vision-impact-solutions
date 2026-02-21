@@ -229,10 +229,50 @@ class VICS_Google_Sheets {
                 vics_log('Ownership transfer failed (non-critical): ' . $ownership_error->getMessage(), 'warning');
             }
 
+            // Ensure link-based edit access so agent doesn't need manual owner approval
+            $this->enable_link_editor_access($sheet_id);
+
             return true;
         } catch (Exception $e) {
             vics_log('Could not share sheet at all: ' . $e->getMessage(), 'error');
-            vics_log('Sheet created for ' . $user_email . ' but they need to be manually granted access', 'warning');
+
+            // Fallback: make link editable so sheet is still accessible without manual approval flow
+            if ($this->enable_link_editor_access($sheet_id)) {
+                vics_log('Fallback link-sharing editor access enabled for sheet: ' . $sheet_id . '. Agent can edit via direct link.', 'warning');
+                return true;
+            }
+
+            vics_log('Sheet created for ' . $user_email . ' but they still need to be manually granted access', 'warning');
+            return false;
+        }
+    }
+
+    /**
+     * Enable "anyone with link" editor access for a sheet.
+     *
+     * @param string $sheet_id
+     * @return bool
+     */
+    private function enable_link_editor_access($sheet_id) {
+        if (!$this->drive_service) {
+            return false;
+        }
+
+        try {
+            $link_permission = new Google_Service_Drive_Permission([
+                'type' => 'anyone',
+                'role' => 'writer',
+                'allowFileDiscovery' => false
+            ]);
+
+            $this->drive_service->permissions->create($sheet_id, $link_permission, [
+                'supportsAllDrives' => true
+            ]);
+
+            vics_log('Enabled anyone-with-link editor access for sheet: ' . $sheet_id);
+            return true;
+        } catch (Exception $e) {
+            vics_log('Could not enable link-sharing editor fallback for sheet ' . $sheet_id . ': ' . $e->getMessage(), 'warning');
             return false;
         }
     }

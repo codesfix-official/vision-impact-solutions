@@ -11,12 +11,18 @@
     var VICS_Orientation = {
 
         progressInterval: null,
+        pendingAutoplay: false,
 
         init: function() {
+            this.pendingAutoplay = $('#vics-step-video').hasClass('active');
             this.bindEvents();
             this.initVideoPlayer();
             // Prevent body scrolling when overlay is active
             $('body').addClass('vics-overlay-active');
+
+            if (this.pendingAutoplay) {
+                this.autoPlayCurrentVideo();
+            }
         },
 
         bindEvents: function() {
@@ -114,6 +120,10 @@
                         }
                         // Restrict forward seeking only
                         self.restrictYouTubeSeeking(player);
+
+                        if ($('#vics-step-video').hasClass('active') || self.pendingAutoplay) {
+                            self.autoPlayCurrentVideo();
+                        }
                         
                         // Check if user already has sufficient progress
                         if (!vicsOrientationData.videoCompleted) {
@@ -277,6 +287,10 @@
                     $('#vics-resume-notice').show();
                 }
 
+                if ($('#vics-step-video').hasClass('active') || self.pendingAutoplay) {
+                    self.autoPlayCurrentVideo();
+                }
+
                 // Restrict forward seeking for Vimeo
                 self.restrictVimeoSeeking(player);
 
@@ -315,6 +329,10 @@
             if (vicsOrientationData.savedTimestamp > 0) {
                 player.currentTime = vicsOrientationData.savedTimestamp;
                 $('#vics-resume-notice').show();
+            }
+
+            if ($('#vics-step-video').hasClass('active') || self.pendingAutoplay) {
+                self.autoPlayCurrentVideo();
             }
 
             // Restrict forward seeking for HTML5
@@ -441,6 +459,47 @@
         showVideoStep: function() {
             $('#vics-step-form').removeClass('active');
             $('#vics-step-video').addClass('active');
+            this.pendingAutoplay = true;
+            this.autoPlayCurrentVideo();
+        },
+
+        autoPlayCurrentVideo: function() {
+            var self = this;
+            var videoType = vicsOrientationData.videoType;
+
+            if (videoType === 'youtube' && window.vicsYouTubePlayer && typeof window.vicsYouTubePlayer.playVideo === 'function') {
+                try {
+                    window.vicsYouTubePlayer.playVideo();
+                    self.pendingAutoplay = false;
+                } catch (e) {}
+                return;
+            }
+
+            if (videoType === 'vimeo' && window.vicsVimeoPlayer && typeof window.vicsVimeoPlayer.play === 'function') {
+                window.vicsVimeoPlayer.play().then(function() {
+                    self.pendingAutoplay = false;
+                }).catch(function() {});
+                return;
+            }
+
+            if (videoType === 'html5') {
+                var player = document.getElementById('vics-html5-player');
+                if (player && typeof player.play === 'function') {
+                    var playPromise = player.play();
+                    if (playPromise && typeof playPromise.then === 'function') {
+                        playPromise.then(function() {
+                            self.pendingAutoplay = false;
+                        }).catch(function() {});
+                    }
+                }
+                return;
+            }
+
+            if (self.pendingAutoplay) {
+                setTimeout(function() {
+                    self.autoPlayCurrentVideo();
+                }, 800);
+            }
         },
 
         showCompletionStep: function() {

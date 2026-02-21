@@ -112,6 +112,9 @@ class VICS_Admin_Settings {
         register_setting('vics_orientation_settings', 'vics_checkbox_text');
         register_setting('vics_orientation_settings', 'vics_button_text');
         register_setting('vics_orientation_settings', 'vics_welcome_message');
+        register_setting('vics_orientation_settings', 'vics_disclosure_text', array(
+            'sanitize_callback' => 'sanitize_textarea_field'
+        ));
         register_setting('vics_orientation_settings', 'vics_video_completion_threshold');
         register_setting('vics_orientation_settings', 'vics_playbook_url');
         register_setting('vics_orientation_settings', 'vics_list_items', array(
@@ -122,6 +125,12 @@ class VICS_Admin_Settings {
         // Profile settings
         register_setting('vics_profile_settings', 'vics_lms_page_url');
         register_setting('vics_profile_settings', 'vics_production_tracker_url');
+
+        // Dynamic About You questions
+        register_setting('vics_questions_settings', 'vics_about_questions', array(
+            'type' => 'array',
+            'sanitize_callback' => array($this, 'sanitize_about_questions')
+        ));
         
         // Google settings
         register_setting('vics_google_settings', 'vics_google_client_id');
@@ -150,6 +159,39 @@ class VICS_Admin_Settings {
         
         return $sanitized;
     }
+
+    /**
+     * Sanitize dynamic About You questions.
+     *
+     * @param mixed $questions
+     * @return array
+     */
+    public function sanitize_about_questions($questions) {
+        if (!is_array($questions)) {
+            return array();
+        }
+
+        $sanitized = array();
+
+        foreach ($questions as $id => $text) {
+            $clean_text = sanitize_text_field($text);
+            if ($clean_text === '') {
+                continue;
+            }
+
+            $clean_id = sanitize_key($id);
+            if ($clean_id === '') {
+                $clean_id = 'question_' . wp_generate_password(8, false, false);
+            }
+
+            $sanitized[] = array(
+                'id' => $clean_id,
+                'text' => $clean_text,
+            );
+        }
+
+        return $sanitized;
+    }
     
     /**
      * Render Settings Page
@@ -169,6 +211,10 @@ class VICS_Admin_Settings {
                 <a href="?page=vics-settings&tab=profile" 
                    class="nav-tab <?php echo $active_tab === 'profile' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Profile', 'vics'); ?>
+                </a>
+                <a href="?page=vics-settings&tab=questions" 
+                   class="nav-tab <?php echo $active_tab === 'questions' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Questions', 'vics'); ?>
                 </a>
                 <a href="?page=vics-settings&tab=google" 
                    class="nav-tab <?php echo $active_tab === 'google' ? 'nav-tab-active' : ''; ?>">
@@ -324,6 +370,16 @@ class VICS_Admin_Settings {
                                 ?></textarea>
                             </td>
                         </tr>
+                        <tr>
+                            <th><label for="vics_disclosure_text"><?php _e('Login Disclosure Text', 'vics'); ?></label></th>
+                            <td>
+                                <textarea name="vics_disclosure_text" id="vics_disclosure_text" 
+                                          rows="6" class="large-text"><?php 
+                                    echo esc_textarea(get_option('vics_disclosure_text')); 
+                                ?></textarea>
+                                <p class="description"><?php _e('This text is shown to agents on every login in the disclosure popup.', 'vics'); ?></p>
+                            </td>
+                        </tr>
                     </table>
                 </div>
                 
@@ -378,6 +434,55 @@ class VICS_Admin_Settings {
                     </table>
                 </div>
                 
+                <?php submit_button(); ?>
+            </form>
+
+            <?php elseif ($active_tab === 'questions'): ?>
+            <!-- Dynamic About You Questions -->
+            <?php $about_questions = get_option('vics_about_questions', array()); ?>
+            <form method="post" action="options.php">
+                <?php settings_fields('vics_questions_settings'); ?>
+
+                <div class="vics-admin-section">
+                    <h2><?php _e('About You Questions', 'vics'); ?></h2>
+                    <p class="description"><?php _e('Add, remove, and reorder the questions shown in the About You section on agent profiles.', 'vics'); ?></p>
+
+                    <table class="form-table">
+                        <tr>
+                            <th><label><?php _e('Questions', 'vics'); ?></label></th>
+                            <td>
+                                <div id="vics-about-questions-container">
+                                    <input type="hidden" name="vics_about_questions[_empty]" value="" />
+                                    <?php if (!empty($about_questions) && is_array($about_questions)): ?>
+                                        <?php foreach ($about_questions as $question): ?>
+                                            <?php
+                                            $question_id = sanitize_key($question['id'] ?? '');
+                                            $question_text = $question['text'] ?? '';
+                                            if ($question_id === '') {
+                                                $question_id = 'question_' . wp_generate_password(8, false, false);
+                                            }
+                                            ?>
+                                            <div class="vics-list-item-row vics-about-question-row" data-question-id="<?php echo esc_attr($question_id); ?>">
+                                                <span class="vics-drag-handle dashicons dashicons-menu"></span>
+                                                <input type="text" name="vics_about_questions[<?php echo esc_attr($question_id); ?>]"
+                                                       value="<?php echo esc_attr($question_text); ?>"
+                                                       class="regular-text"
+                                                       placeholder="<?php esc_attr_e('Enter question text', 'vics'); ?>" />
+                                                <button type="button" class="button vics-remove-about-question">
+                                                    <span class="dashicons dashicons-trash"></span>
+                                                </button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                                <button type="button" id="vics-add-about-question" class="button">
+                                    <span class="dashicons dashicons-plus-alt2"></span> <?php _e('Add Question', 'vics'); ?>
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
                 <?php submit_button(); ?>
             </form>
             
@@ -654,115 +759,88 @@ class VICS_Admin_Settings {
      * @return array
      */
     public function get_upcoming_birthdays_from_db() {
-        global $wpdb;
-        
-        // Get all agents with birth dates
-        $agents = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT u.ID, u.display_name, u.user_email, p.date_of_birth, p.agent_code, p.license_number
-                 FROM {$wpdb->users} u
-                 INNER JOIN {$wpdb->prefix}vics_agent_profile p ON u.ID = p.user_id
-                 WHERE p.date_of_birth IS NOT NULL 
-                 AND p.date_of_birth != ''
-                 AND p.date_of_birth != '0000-00-00'
-                 AND u.ID IN (
-                     SELECT user_id FROM {$wpdb->usermeta} 
-                     WHERE meta_key = %s 
-                     AND meta_value LIKE %s
-                 )
-                 ORDER BY u.display_name",
-                $wpdb->prefix . 'capabilities',
-                '%"agent"%'
-            ),
-            ARRAY_A
-        );
-        
-        // Debug: Log the raw data
+        $agents = get_users(array(
+            'role' => 'agent',
+            'fields' => array('ID', 'display_name', 'user_email')
+        ));
+
+        $upcoming = array();
+        $timezone = new DateTimeZone(wp_timezone_string());
+        $today = new DateTime('today', $timezone);
+        $current_year = (int) $today->format('Y');
+
         if (get_option('vics_enable_debug_logging')) {
-            vics_log('Birthday Check: Found ' . count($agents) . ' agents with birth dates');
-            foreach ($agents as $agent) {
-                vics_log('Agent: ' . $agent['display_name'] . ' | DOB: ' . $agent['date_of_birth']);
-            }
+            vics_log('Birthday Check: Found ' . count($agents) . ' agents');
         }
 
-        $upcoming = [];
-        $today = current_time('Y-m-d');
-        $current_year = (int)current_time('Y');
-        $today_timestamp = strtotime($today);
-        $thirty_days_timestamp = strtotime('+30 days', $today_timestamp);
-
         foreach ($agents as $agent) {
-            if (empty($agent['date_of_birth'])) {
+            $profile = VICS_Database::get_profile($agent->ID);
+            $dob_raw = trim((string) ($profile['date_of_birth'] ?? ''));
+
+            if ($dob_raw === '' || $dob_raw === '0000-00-00') {
                 continue;
             }
-            
-            // Clean the date string
-            $dob = trim($agent['date_of_birth']);
-            
-            // Try multiple date formats
-            $birth_timestamp = false;
-            $formats = ['Y-m-d', 'Y/m/d', 'm/d/Y', 'd/m/Y', 'Y-m-d H:i:s'];
-            
+
+            $dob_obj = null;
+            $formats = array('Y-m-d', 'Y-m-d H:i:s', 'Y/m/d', 'd/m/Y', 'm/d/Y', 'd-m-Y', 'm-d-Y');
+
             foreach ($formats as $format) {
-                $date_obj = DateTime::createFromFormat($format, $dob);
-                if ($date_obj !== false) {
-                    $birth_timestamp = $date_obj->getTimestamp();
+                $temp = DateTime::createFromFormat($format, $dob_raw, $timezone);
+                if ($temp instanceof DateTime) {
+                    $dob_obj = $temp;
                     break;
                 }
             }
-            
-            // Fallback to strtotime
-            if ($birth_timestamp === false) {
-                $birth_timestamp = strtotime($dob);
+
+            if (!$dob_obj) {
+                $timestamp = strtotime($dob_raw);
+                if ($timestamp !== false && $timestamp > 0) {
+                    $dob_obj = new DateTime('@' . $timestamp);
+                    $dob_obj->setTimezone($timezone);
+                }
             }
-            
-            // Skip if still invalid
-            if ($birth_timestamp === false || $birth_timestamp < 0) {
+
+            if (!$dob_obj) {
                 if (get_option('vics_enable_debug_logging')) {
-                    vics_log('Birthday Check: Invalid date for ' . $agent['display_name'] . ': ' . $dob);
+                    vics_log('Birthday Check: Invalid date for ' . $agent->display_name . ': ' . $dob_raw);
                 }
                 continue;
             }
-            
-            // Extract month and day from birth date
-            $birth_month = date('m', $birth_timestamp);
-            $birth_day = date('d', $birth_timestamp);
-            
-            // Calculate this year's birthday
-            $birthday_this_year = $current_year . '-' . $birth_month . '-' . $birth_day;
-            $birthday_timestamp = strtotime($birthday_this_year);
-            
-            // If birthday has passed this year, use next year
-            if ($birthday_timestamp < $today_timestamp) {
-                $birthday_this_year = ($current_year + 1) . '-' . $birth_month . '-' . $birth_day;
-                $birthday_timestamp = strtotime($birthday_this_year);
+
+            $birth_month = (int) $dob_obj->format('m');
+            $birth_day = (int) $dob_obj->format('d');
+
+            $birthday_this_year = DateTime::createFromFormat('Y-m-d', sprintf('%04d-%02d-%02d', $current_year, $birth_month, $birth_day), $timezone);
+            if (!$birthday_this_year) {
+                continue;
             }
 
-            // Check if birthday is within the next 30 days
-            if ($birthday_timestamp >= $today_timestamp && $birthday_timestamp <= $thirty_days_timestamp) {
-                $days_remaining = floor(($birthday_timestamp - $today_timestamp) / (60 * 60 * 24));
+            if ($birthday_this_year < $today) {
+                $birthday_this_year = DateTime::createFromFormat('Y-m-d', sprintf('%04d-%02d-%02d', $current_year + 1, $birth_month, $birth_day), $timezone);
+                if (!$birthday_this_year) {
+                    continue;
+                }
+            }
 
-                $upcoming[] = [
-                    'name' => $agent['display_name'],
-                    'agent_code' => $agent['agent_code'] ?? '',
-                    'license_number' => $agent['license_number'] ?? '',
-                    'date_of_birth' => $agent['date_of_birth'],
-                    'birthday_date' => $birthday_this_year,
-                    'days_remaining' => (int)$days_remaining,
-                    'email' => $agent['user_email']
-                ];
-                
+            $days_remaining = (int) $today->diff($birthday_this_year)->days;
+
+            if ($days_remaining >= 0 && $days_remaining <= 30) {
+                $upcoming[] = array(
+                    'name' => $agent->display_name,
+                    'agent_code' => $profile['agent_code'] ?? '',
+                    'license_number' => $profile['license_number'] ?? '',
+                    'date_of_birth' => $dob_raw,
+                    'birthday_date' => $birthday_this_year->format('Y-m-d'),
+                    'days_remaining' => $days_remaining,
+                    'email' => $agent->user_email,
+                );
+
                 if (get_option('vics_enable_debug_logging')) {
-                    vics_log('Birthday Check: Added ' . $agent['display_name'] . ' with ' . $days_remaining . ' days remaining');
+                    vics_log('Birthday Check: Added ' . $agent->display_name . ' with ' . $days_remaining . ' days remaining');
                 }
             }
         }
-        
-        if (get_option('vics_enable_debug_logging')) {
-            vics_log('Birthday Check: Total upcoming birthdays: ' . count($upcoming));
-        }
 
-        // Sort by days remaining (closest first)
         usort($upcoming, function($a, $b) {
             return $a['days_remaining'] - $b['days_remaining'];
         });
@@ -771,6 +849,10 @@ class VICS_Admin_Settings {
     }
     public function render_agents_page() {
         $agents = get_users(array('role' => 'agent'));
+        $about_questions = get_option('vics_about_questions', array());
+        if (!is_array($about_questions)) {
+            $about_questions = array();
+        }
         ?>
         <div class="wrap">
             <h1><?php _e('All Agents', 'vics'); ?></h1>
@@ -808,6 +890,18 @@ class VICS_Admin_Settings {
                             $profile = VICS_Database::get_profile($agent->ID);
                             $orientation_completed = VICS_Database::has_completed_orientation($agent->ID);
                             $licenses = VICS_Database::get_licenses($agent->ID);
+                            $about_answers = get_user_meta($agent->ID, 'vics_about_answers', true);
+                            if (!is_array($about_answers)) {
+                                $about_answers = array();
+                            }
+
+                            // Backward compatibility: hydrate answers from legacy fields when needed
+                            $legacy_about_fields = array('goals_for_year', 'favorite_things', 'unknown_fact', 'support_needed', 'feedback_preference');
+                            foreach ($legacy_about_fields as $legacy_field) {
+                                if (!isset($about_answers[$legacy_field]) && !empty($profile[$legacy_field])) {
+                                    $about_answers[$legacy_field] = $profile[$legacy_field];
+                                }
+                            }
                         ?>
                             <tr>
                                 <td>
@@ -851,11 +945,7 @@ class VICS_Admin_Settings {
                                             data-birthday="<?php echo esc_attr($profile['date_of_birth'] ?? ''); ?>"
                                             data-city="<?php echo esc_attr($profile['city'] ?? ''); ?>"
                                             data-state="<?php echo esc_attr($profile['state'] ?? ''); ?>"
-                                            data-goals="<?php echo esc_attr($profile['goals_for_year'] ?? ''); ?>"
-                                            data-favorites="<?php echo esc_attr($profile['favorite_things'] ?? ''); ?>"
-                                            data-unknown="<?php echo esc_attr($profile['unknown_fact'] ?? ''); ?>"
-                                            data-support="<?php echo esc_attr($profile['support_needed'] ?? ''); ?>"
-                                            data-feedback="<?php echo esc_attr($profile['feedback_preference'] ?? ''); ?>">
+                                            data-about="<?php echo esc_attr(wp_json_encode($about_answers)); ?>">
                                         <?php _e('View Details', 'vics'); ?>
                                     </button>
                                 </td>
@@ -878,32 +968,44 @@ class VICS_Admin_Settings {
                     <div style="margin-bottom: 20px;">
                         <strong>Location:</strong> <span id="modal-location">-</span>
                     </div>
-                    <div style="margin-bottom: 20px;">
-                        <strong>Goals for the year:</strong>
-                        <div id="modal-goals" style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">-</div>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <strong>What are your 5 favorite things to do outside of work?</strong>
-                        <div id="modal-favorites" style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">-</div>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <strong>What's one thing most people don't know about you?</strong>
-                        <div id="modal-unknown" style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">-</div>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <strong>Where do you feel you need the most support right now?</strong>
-                        <div id="modal-support" style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">-</div>
-                    </div>
-                    <div style="margin-bottom: 20px;">
-                        <strong>What type of feedback helps you grow the most?</strong>
-                        <div id="modal-feedback" style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">-</div>
-                    </div>
+                    <div id="modal-about-dynamic"></div>
                 </div>
             </div>
         </div>
         
         <script>
         jQuery(document).ready(function($) {
+            var aboutQuestions = <?php echo wp_json_encode($about_questions); ?>;
+
+            function escapeHtml(text) {
+                return $('<div/>').text(text || '').html();
+            }
+
+            function renderDynamicAbout(aboutAnswers) {
+                var html = '';
+
+                if (!Array.isArray(aboutQuestions) || aboutQuestions.length === 0) {
+                    return '<div style="margin-bottom: 20px;"><em>No About You questions configured.</em></div>';
+                }
+
+                aboutQuestions.forEach(function(question) {
+                    var questionId = (question && question.id) ? String(question.id) : '';
+                    var questionText = (question && question.text) ? String(question.text) : '';
+
+                    if (!questionId || !questionText) {
+                        return;
+                    }
+
+                    var answer = (aboutAnswers && aboutAnswers[questionId]) ? aboutAnswers[questionId] : '';
+                    html += '<div style="margin-bottom: 20px;">';
+                    html += '<strong>' + escapeHtml(questionText) + ':</strong>';
+                    html += '<div style="margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; white-space: pre-wrap;">' + escapeHtml(answer || 'Not set') + '</div>';
+                    html += '</div>';
+                });
+
+                return html;
+            }
+
             // View Agent Details
             $('.view-agent-details').on('click', function() {
                 var btn = $(this);
@@ -911,32 +1013,26 @@ class VICS_Admin_Settings {
                 var birthday = btn.data('birthday');
                 var city = btn.data('city');
                 var state = btn.data('state');
-                var goals = btn.data('goals');
-                var favorites = btn.data('favorites');
-                var unknown = btn.data('unknown');
-                var support = btn.data('support');
-                var feedback = btn.data('feedback');
+                var aboutAnswers = {};
+
+                try {
+                    aboutAnswers = JSON.parse(btn.attr('data-about') || '{}');
+                } catch (e) {
+                    aboutAnswers = {};
+                }
                 
                 console.log('Agent Details:', {
                     name: name,
                     birthday: birthday,
                     city: city,
                     state: state,
-                    goals: goals,
-                    favorites: favorites,
-                    unknown: unknown,
-                    support: support,
-                    feedback: feedback
+                    aboutAnswers: aboutAnswers
                 });
                 
                 $('#agent-modal-title').text(name + ' - About');
                 $('#modal-birthday').text(birthday || 'Not set');
                 $('#modal-location').text((city && state) ? (city + ', ' + state) : (city || state || 'Not set'));
-                $('#modal-goals').text(goals || 'Not set');
-                $('#modal-favorites').text(favorites || 'Not set');
-                $('#modal-unknown').text(unknown || 'Not set');
-                $('#modal-support').text(support || 'Not set');
-                $('#modal-feedback').text(feedback || 'Not set');
+                $('#modal-about-dynamic').html(renderDynamicAbout(aboutAnswers));
                 
                 $('#agent-details-modal').fadeIn();
             });

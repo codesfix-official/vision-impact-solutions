@@ -141,6 +141,66 @@
     background: #005a87;
 }
 
+/* About Questions (Admin Tab) */
+#vics-about-questions-container {
+    margin-bottom: 14px;
+}
+
+.vics-about-question-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.vics-about-question-row .vics-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    color: #7a7a7a;
+    cursor: move;
+    margin-top: 0;
+}
+
+.vics-about-question-row .regular-text {
+    flex: 1;
+    min-width: 340px;
+}
+
+.vics-about-question-row .vics-remove-about-question {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+}
+
+.vics-about-question-row .vics-remove-about-question .dashicons {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+    margin: 0;
+}
+
+#vics-add-about-question {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+#vics-add-about-question .dashicons {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 16px;
+    margin: 0;
+}
+
 /* Agents List */
 .agents-list {
     margin-top: 20px;

@@ -9,6 +9,16 @@ $user_id = get_current_user_id();
 $user = wp_get_current_user();
 $profile = VICS_Database::get_profile($user_id);
 
+$about_questions = get_option('vics_about_questions', array());
+if (!is_array($about_questions)) {
+    $about_questions = array();
+}
+
+$about_answers = get_user_meta($user_id, 'vics_about_answers', true);
+if (!is_array($about_answers)) {
+    $about_answers = array();
+}
+
 // Check if user is an agent and create Google Sheet if it doesn't exist
 if (in_array('agent', $user->roles) && empty($profile['google_sheet_id'])) {
     $sync = new VICS_Google_Sync();
@@ -444,36 +454,25 @@ $license_expiry = $primary_license ? $primary_license['expiry_date'] : '';
                            value="<?php echo esc_attr($profile['state'] ?? ''); ?>" />
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Goals for the year</label>
-                <textarea class="form-input" name="goals_for_year" rows="3"><?php 
-                    echo esc_textarea($profile['goals_for_year'] ?? ''); 
-                ?></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">What are your 5 favorite things to do outside of work? (hobbies, entertainment, sports, etc)</label>
-                <textarea class="form-input" name="favorite_things" rows="4"><?php 
-                    echo esc_textarea($profile['favorite_things'] ?? ''); 
-                ?></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">What's one thing most people don't know about you?</label>
-                <textarea class="form-input" name="unknown_fact" rows="3"><?php 
-                    echo esc_textarea($profile['unknown_fact'] ?? ''); 
-                ?></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Where do you feel you need the most support right now?</label>
-                <textarea class="form-input" name="support_needed" rows="3"><?php 
-                    echo esc_textarea($profile['support_needed'] ?? ''); 
-                ?></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">What type of feedback helps you grow the most?</label>
-                <textarea class="form-input" name="feedback_preference" rows="3"><?php 
-                    echo esc_textarea($profile['feedback_preference'] ?? ''); 
-                ?></textarea>
-            </div>
+            <?php foreach ($about_questions as $question) : ?>
+                <?php
+                $question_id = sanitize_key($question['id'] ?? '');
+                $question_text = $question['text'] ?? '';
+
+                if ($question_id === '' || $question_text === '') {
+                    continue;
+                }
+
+                $answer = $about_answers[$question_id] ?? '';
+                if ($answer === '' && isset($profile[$question_id])) {
+                    $answer = $profile[$question_id];
+                }
+                ?>
+                <div class="form-group">
+                    <label class="form-label"><?php echo esc_html($question_text); ?></label>
+                    <textarea class="form-input" name="about_answers[<?php echo esc_attr($question_id); ?>]" rows="3"><?php echo esc_textarea($answer); ?></textarea>
+                </div>
+            <?php endforeach; ?>
             <button type="submit" class="btn btn-primary" id="ad-save-about">
                 <span class="btn-text">Save Changes</span>
                 <span class="btn-loading" style="display: none;">Saving...</span>

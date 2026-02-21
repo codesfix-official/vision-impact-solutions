@@ -20,6 +20,7 @@ class VICS_Orientation_Handler {
         add_action('template_redirect', array($this, 'check_orientation_status'));
         
         // Render popup
+        add_action('wp_footer', array($this, 'render_disclosure_popup'), 5);
         add_action('wp_footer', array($this, 'render_orientation_popup'));
         
         // AJAX handlers
@@ -27,6 +28,69 @@ class VICS_Orientation_Handler {
         add_action('wp_ajax_vics_save_video_progress', array($this, 'save_video_progress'));
         add_action('wp_ajax_vics_mark_video_complete', array($this, 'mark_video_complete'));
         add_action('wp_ajax_vics_complete_orientation', array($this, 'complete_orientation'));
+        add_action('wp_ajax_vics_acknowledge_disclosure', array($this, 'acknowledge_disclosure'));
+    }
+
+    /**
+     * Get current login session token.
+     *
+     * @return string
+     */
+    private function get_current_session_token() {
+        if (function_exists('wp_get_session_token')) {
+            return (string) wp_get_session_token();
+        }
+
+        return '';
+    }
+
+    /**
+     * Render login disclosure popup once per login session for every logged-in user.
+     */
+    public function render_disclosure_popup() {
+        if (!is_user_logged_in()) {
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return;
+        }
+
+        $current_token = $this->get_current_session_token();
+        if ($current_token === '') {
+            return;
+        }
+
+        $seen_token = (string) get_user_meta($user_id, 'vics_disclosure_seen_token', true);
+        if (hash_equals($seen_token, $current_token)) {
+            return;
+        }
+
+        $disclosure_nonce = wp_create_nonce('vics_disclosure_nonce');
+        include VICS_PLUGIN_PATH . 'templates/disclosure-popup.php';
+    }
+
+    /**
+     * Mark disclosure as acknowledged for current login session.
+     */
+    public function acknowledge_disclosure() {
+        check_ajax_referer('vics_disclosure_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(__('Not logged in', 'vics'));
+        }
+
+        $user_id = get_current_user_id();
+        $current_token = $this->get_current_session_token();
+
+        if ($current_token !== '') {
+            update_user_meta($user_id, 'vics_disclosure_seen_token', $current_token);
+        }
+
+        wp_send_json_success(array(
+            'message' => __('Disclosure acknowledged', 'vics')
+        ));
     }
     
     /**

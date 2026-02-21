@@ -82,6 +82,28 @@ class VICS_Profile_Handler {
                 }
             }
         }
+
+        // Dynamic About You answers (stored in user meta)
+        if (isset($_POST['about_answers']) && is_array($_POST['about_answers'])) {
+            $about_answers = array();
+            foreach ($_POST['about_answers'] as $question_id => $answer) {
+                $clean_question_id = sanitize_key($question_id);
+                if ($clean_question_id === '') {
+                    continue;
+                }
+                $about_answers[$clean_question_id] = sanitize_textarea_field($answer);
+            }
+
+            update_user_meta($user_id, 'vics_about_answers', $about_answers);
+
+            // Backward compatibility: sync legacy fields if they exist in dynamic questions
+            $legacy_about_fields = array('goals_for_year', 'favorite_things', 'unknown_fact', 'support_needed', 'feedback_preference');
+            foreach ($legacy_about_fields as $legacy_field) {
+                if (array_key_exists($legacy_field, $about_answers)) {
+                    $profile_data[$legacy_field] = $about_answers[$legacy_field];
+                }
+            }
+        }
         
         // If agent code is being changed by agent, set status to pending
         if ($agent_code_changed) {

@@ -752,7 +752,8 @@ function vics_set_default_options() {
         'vics_checkbox_text' => __('I have read and agree to the Terms and Conditions', 'vics'),
         'vics_button_text' => __('Continue to Orientation Video', 'vics'),
         'vics_welcome_message' => __('Welcome Onboard! You have successfully completed the orientation.', 'vics'),
-        'vics_video_completion_threshold' => 95,
+        'vics_disclosure_text' => __('By accessing and using the tools, training, systems, and resources provided on this website, you acknowledge that there is no guarantee of success, income, or specific results. These resources are intended to support your development, but your success depends entirely on your personal effort, discipline, consistency, and ability to take action. You understand and agree that you are solely responsible for your own performance and outcomes as an independent agent, and results will vary based on individual commitment and execution.', 'vics'),
+        'vics_video_completion_threshold' => 100,
     );
     
     foreach ($orientation_defaults as $key => $value) {

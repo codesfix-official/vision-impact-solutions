@@ -30,6 +30,18 @@
                 $(this).closest('.vics-list-item-row').remove();
             });
 
+            // Add About question
+            $(document).on('click', '#vics-add-about-question', function(e) {
+                e.preventDefault();
+                self.addAboutQuestion();
+            });
+
+            // Remove About question
+            $(document).on('click', '.vics-remove-about-question', function(e) {
+                e.preventDefault();
+                $(this).closest('.vics-about-question-row').remove();
+            });
+
             // Reset orientation
             $(document).on('click', '.vics-reset-orientation', function(e) {
                 e.preventDefault();
@@ -51,6 +63,13 @@
                     // Update order when items are reordered
                 }
             });
+
+            $('#vics-about-questions-container').sortable({
+                handle: '.vics-drag-handle',
+                update: function() {
+                    // Order updates automatically by DOM field order
+                }
+            });
         },
 
         addListItem: function() {
@@ -66,6 +85,22 @@
             `;
 
             $('#vics-list-items-container').append(itemHtml);
+        },
+
+        addAboutQuestion: function() {
+            var questionId = 'question_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+            var itemHtml = `
+                <div class="vics-list-item-row vics-about-question-row" data-question-id="${questionId}">
+                    <span class="vics-drag-handle dashicons dashicons-menu"></span>
+                    <input type="text" name="vics_about_questions[${questionId}]" value="" class="regular-text" placeholder="Enter question text" />
+                    <button type="button" class="button vics-remove-about-question">
+                        <span class="dashicons dashicons-trash"></span>
+                    </button>
+                </div>
+            `;
+
+            $('#vics-about-questions-container').append(itemHtml);
         },
 
         updateLicenseStatus: function($select) {
