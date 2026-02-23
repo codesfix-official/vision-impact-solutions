@@ -36,6 +36,38 @@ if (have_posts()) :
             return $time_obj;
         };
 
+        $get_next_weekly_occurrence = function ($start_date_value, $from_date_value, $repeat_until_value = '') use ($parse_pst_date) {
+            $start_obj = $parse_pst_date($start_date_value);
+            $from_obj = $parse_pst_date($from_date_value);
+
+            if (!$start_obj || !$from_obj) {
+                return null;
+            }
+
+            $candidate = clone $start_obj;
+            if ($candidate < $from_obj) {
+                $days_diff = (int) $candidate->diff($from_obj)->format('%a');
+                $weeks_to_add = (int) floor($days_diff / 7);
+
+                if ($weeks_to_add > 0) {
+                    $candidate->modify('+' . $weeks_to_add . ' weeks');
+                }
+
+                while ($candidate < $from_obj) {
+                    $candidate->modify('+1 week');
+                }
+            }
+
+            if (!empty($repeat_until_value)) {
+                $repeat_until_obj = $parse_pst_date($repeat_until_value);
+                if ($repeat_until_obj && $candidate > $repeat_until_obj) {
+                    return null;
+                }
+            }
+
+            return $candidate->format('Y-m-d');
+        };
+
         $event_id = get_the_ID();
         $start_date = get_post_meta($event_id, '_event_start_date', true);
         $start_time = get_post_meta($event_id, '_event_start_time', true);
@@ -45,14 +77,24 @@ if (have_posts()) :
         $address = get_post_meta($event_id, '_event_address', true);
         $map_link = get_post_meta($event_id, '_event_map_link', true);
         $virtual_link = get_post_meta($event_id, '_event_virtual_link', true);
+        $is_recurring = get_post_meta($event_id, '_event_is_recurring', true) === '1';
+        $recurrence_end_date = get_post_meta($event_id, '_event_recurrence_end_date', true);
+
+        $display_start_date = $start_date;
+        if ($is_recurring && $start_date) {
+            $next_occurrence_date = $get_next_weekly_occurrence($start_date, $today_pst, $recurrence_end_date);
+            if ($next_occurrence_date) {
+                $display_start_date = $next_occurrence_date;
+            }
+        }
 
         // Get featured image
         $featured_image_url = get_the_post_thumbnail_url($event_id, 'full');
         
         // Format dates
         $date_display = '';
-        if ($start_date) {
-            $start = $parse_pst_date($start_date);
+        if ($display_start_date) {
+            $start = $parse_pst_date($display_start_date);
             $date_display = $start->format('l, F j, Y');
 
             if ($start_time) {

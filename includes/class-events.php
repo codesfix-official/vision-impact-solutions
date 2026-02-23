@@ -126,6 +126,167 @@ class VICS_Events {
         return $time_obj->format('g:i A') . ' PST';
     }
 
+    private function is_event_recurring($event_id) {
+        return get_post_meta($event_id, '_event_is_recurring', true) === '1';
+    }
+
+    private function parse_pacific_date($date_value) {
+        if (empty($date_value)) {
+            return null;
+        }
+
+        try {
+            return new DateTime($date_value, $this->get_pacific_timezone());
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    private function get_next_occurrence_date($event_id, $from_date = '') {
+        $start_date = get_post_meta($event_id, '_event_start_date', true);
+        $start = $this->parse_pacific_date($start_date);
+        if (!$start) {
+            return null;
+        }
+
+        $from = $this->parse_pacific_date($from_date ?: $this->get_pacific_today());
+        if (!$from) {
+            return null;
+        }
+
+        if (!$this->is_event_recurring($event_id)) {
+            return ($start < $from) ? null : $start->format('Y-m-d');
+        }
+
+        $candidate = clone $start;
+        if ($candidate < $from) {
+            $days_diff = (int) $candidate->diff($from)->format('%a');
+            $weeks_to_add = (int) floor($days_diff / 7);
+            if ($weeks_to_add > 0) {
+                $candidate->modify('+' . $weeks_to_add . ' weeks');
+            }
+
+            while ($candidate < $from) {
+                $candidate->modify('+1 week');
+            }
+        }
+
+        $recurrence_end = $this->parse_pacific_date(get_post_meta($event_id, '_event_recurrence_end_date', true));
+        if ($recurrence_end && $candidate > $recurrence_end) {
+            return null;
+        }
+
+        return $candidate->format('Y-m-d');
+    }
+
+    private function get_occurrence_dates_in_range($event_id, $range_start, $range_end) {
+        $start = $this->parse_pacific_date(get_post_meta($event_id, '_event_start_date', true));
+        $range_start_obj = $this->parse_pacific_date($range_start);
+        $range_end_obj = $this->parse_pacific_date($range_end);
+
+        if (!$start || !$range_start_obj || !$range_end_obj) {
+            return array();
+        }
+
+        if ($range_end_obj < $range_start_obj) {
+            return array();
+        }
+
+        if (!$this->is_event_recurring($event_id)) {
+            if ($start >= $range_start_obj && $start <= $range_end_obj) {
+                return array($start->format('Y-m-d'));
+            }
+
+            return array();
+        }
+
+        $recurrence_end = $this->parse_pacific_date(get_post_meta($event_id, '_event_recurrence_end_date', true));
+        if ($recurrence_end && $recurrence_end < $range_start_obj) {
+            return array();
+        }
+
+        $current = clone $start;
+        if ($current < $range_start_obj) {
+            $days_diff = (int) $current->diff($range_start_obj)->format('%a');
+            $weeks_to_add = (int) floor($days_diff / 7);
+            if ($weeks_to_add > 0) {
+                $current->modify('+' . $weeks_to_add . ' weeks');
+            }
+
+            while ($current < $range_start_obj) {
+                $current->modify('+1 week');
+            }
+        }
+
+        $dates = array();
+        while ($current <= $range_end_obj) {
+            if ($current >= $start) {
+                if ($recurrence_end && $current > $recurrence_end) {
+                    break;
+                }
+                $dates[] = $current->format('Y-m-d');
+            }
+
+            $current->modify('+1 week');
+        }
+
+        return $dates;
+    }
+
+    private function get_occurrence_entries($range_start, $range_end = '', $search_term = '', $limit = 0) {
+        $query_args = array(
+            'post_type' => 'events',
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        );
+
+        if ($search_term !== '') {
+            $query_args['s'] = $search_term;
+        }
+
+        $events = get_posts($query_args);
+        $entries = array();
+
+        foreach ($events as $event) {
+            $event_id = $event->ID;
+
+            if (!empty($range_end)) {
+                $dates = $this->get_occurrence_dates_in_range($event_id, $range_start, $range_end);
+                foreach ($dates as $occurrence_date) {
+                    $entries[] = array(
+                        'post' => $event,
+                        'event_id' => $event_id,
+                        'occurrence_date' => $occurrence_date
+                    );
+                }
+                continue;
+            }
+
+            $next_date = $this->get_next_occurrence_date($event_id, $range_start);
+            if ($next_date) {
+                $entries[] = array(
+                    'post' => $event,
+                    'event_id' => $event_id,
+                    'occurrence_date' => $next_date
+                );
+            }
+        }
+
+        usort($entries, function ($first, $second) {
+            if ($first['occurrence_date'] === $second['occurrence_date']) {
+                return strcmp(get_the_title($first['event_id']), get_the_title($second['event_id']));
+            }
+
+            return strcmp($first['occurrence_date'], $second['occurrence_date']);
+        });
+
+        if ($limit > 0 && count($entries) > $limit) {
+            $entries = array_slice($entries, 0, $limit);
+        }
+
+        return $entries;
+    }
+
     public function add_single_rewrite_rule() {
         add_rewrite_rule(
             '^events/([^/]+)/?$',
@@ -162,6 +323,8 @@ class VICS_Events {
         $address = get_post_meta($post->ID, '_event_address', true);
         $map_link = get_post_meta($post->ID, '_event_map_link', true);
         $virtual_link = get_post_meta($post->ID, '_event_virtual_link', true);
+        $is_recurring = get_post_meta($post->ID, '_event_is_recurring', true) === '1';
+        $recurrence_end_date = get_post_meta($post->ID, '_event_recurrence_end_date', true);
 
         ?>
         <table class="form-table">
@@ -187,6 +350,21 @@ class VICS_Events {
                         <option value="physical" <?php selected($event_type, 'physical'); ?>><?php _e('Physical', 'vics'); ?></option>
                         <option value="virtual" <?php selected($event_type, 'virtual'); ?>><?php _e('Virtual', 'vics'); ?></option>
                     </select>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="event_is_recurring"><?php _e('Recurring Weekly', 'vics'); ?></label></th>
+                <td>
+                    <label>
+                        <input type="checkbox" id="event_is_recurring" name="event_is_recurring" value="1" <?php checked($is_recurring); ?>>
+                        <?php _e('Repeat this event every week (same title/time/link)', 'vics'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr id="event_recurrence_end_date_row" style="display: <?php echo $is_recurring ? 'table-row' : 'none'; ?>;">
+                <th><label for="event_recurrence_end_date"><?php _e('Repeat Until (Optional)', 'vics'); ?></label></th>
+                <td>
+                    <input type="date" id="event_recurrence_end_date" name="event_recurrence_end_date" value="<?php echo esc_attr($recurrence_end_date); ?>">
                 </td>
             </tr>
         </table>
@@ -237,6 +415,15 @@ class VICS_Events {
                     $('#virtual_fields').hide();
                 }
             });
+
+            $('#event_is_recurring').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#event_recurrence_end_date_row').show();
+                } else {
+                    $('#event_recurrence_end_date_row').hide();
+                    $('#event_recurrence_end_date').val('');
+                }
+            });
         });
         </script>
         <?php
@@ -259,6 +446,8 @@ class VICS_Events {
         }
 
         // Save event details
+        update_post_meta($post_id, '_event_is_recurring', isset($_POST['event_is_recurring']) ? '1' : '0');
+
         $fields = array(
             'event_start_date',
             'event_start_time',
@@ -267,7 +456,8 @@ class VICS_Events {
             'event_type',
             'event_address',
             'event_map_link',
-            'event_virtual_link'
+            'event_virtual_link',
+            'event_recurrence_end_date'
         );
 
         foreach ($fields as $field) {
@@ -278,6 +468,10 @@ class VICS_Events {
                 }
                 update_post_meta($post_id, '_' . $field, $value);
             }
+        }
+
+        if (!isset($_POST['event_recurrence_end_date'])) {
+            delete_post_meta($post_id, '_event_recurrence_end_date');
         }
     }
 
@@ -305,8 +499,18 @@ class VICS_Events {
             case 'event_date':
                 $start_date = get_post_meta($post_id, '_event_start_date', true);
                 if ($start_date) {
-                    $date = new DateTime($start_date, $this->get_pacific_timezone());
-                    echo esc_html($date->format('M j, Y'));
+                    if ($this->is_event_recurring($post_id)) {
+                        $next_date = $this->get_next_occurrence_date($post_id, $this->get_pacific_today());
+                        if ($next_date) {
+                            $date = new DateTime($next_date, $this->get_pacific_timezone());
+                            echo esc_html($date->format('M j, Y') . ' (Weekly)');
+                        } else {
+                            echo esc_html(__('Recurring (Ended)', 'vics'));
+                        }
+                    } else {
+                        $date = new DateTime($start_date, $this->get_pacific_timezone());
+                        echo esc_html($date->format('M j, Y'));
+                    }
                 } else {
                     echo __('—', 'vics');
                 }
@@ -393,8 +597,9 @@ class VICS_Events {
                 <div class="events-list" id="events-list">
                     <?php foreach ($upcoming_events as $event): ?>
                         <?php
-                        $event_id = $event->ID;
-                        $start_date = get_post_meta($event_id, '_event_start_date', true);
+                        $event_id = $event['event_id'];
+                        $event_post = $event['post'];
+                        $start_date = $event['occurrence_date'];
                         $start_time = get_post_meta($event_id, '_event_start_time', true);
                         $event_type = get_post_meta($event_id, '_event_type', true);
                         $virtual_link = get_post_meta($event_id, '_event_virtual_link', true);
@@ -420,7 +625,7 @@ class VICS_Events {
                                 <?php endif; ?>
                             </div>
                             <div class="event-details">
-                                <h3><a href="<?php echo get_permalink($event_id); ?>"><?php echo get_the_title($event_id); ?></a></h3>
+                                <h3><a href="<?php echo get_permalink($event_id); ?>"><?php echo esc_html(get_the_title($event_post)); ?></a></h3>
                                 <p class="time"><?php echo $time_display; ?></p>
                                 <p class="description"><?php echo $this->trim_excerpt($event_id, 10); ?></p>
                             </div>
@@ -445,8 +650,9 @@ class VICS_Events {
                         <h3>This Week at a Glance</h3>
                         <?php foreach ($week_events as $event): ?>
                             <?php
-                            $event_id = $event->ID;
-                            $start_date = get_post_meta($event_id, '_event_start_date', true);
+                            $event_id = $event['event_id'];
+                            $event_post = $event['post'];
+                            $start_date = $event['occurrence_date'];
                             $start_time = get_post_meta($event_id, '_event_start_time', true);
 
                             $date_obj = new DateTime($start_date, $this->get_pacific_timezone());
@@ -461,7 +667,7 @@ class VICS_Events {
                                     <span class="month"><?php echo $month; ?></span>
                                 </div>
                                 <div class="mini-details">
-                                    <h4><?php echo get_the_title($event_id); ?></h4>
+                                    <h4><?php echo esc_html(get_the_title($event_post)); ?></h4>
                                     <p class="time"><?php echo $time_display; ?></p>
                                 </div>
                             </div>
@@ -494,23 +700,11 @@ class VICS_Events {
     /**     * Get events for archive display
      */
     private function get_events_for_archive($show_past = false) {
-        $args = array(
-            'post_type' => 'events',
-            'posts_per_page' => 8,
-            'meta_key' => '_event_start_date',
-            'orderby' => 'meta_value',
-            'order' => 'ASC',
-            'meta_query' => array(
-                array(
-                    'key' => '_event_start_date',
-                    'value' => $this->get_pacific_today(),
-                    'compare' => $show_past ? '<=' : '>=',
-                    'type' => 'DATE'
-                )
-            )
-        );
+        if ($show_past) {
+            return array();
+        }
 
-        return get_posts($args);
+        return $this->get_occurrence_entries($this->get_pacific_today(), '', '', 8);
     }
 
     /**
@@ -520,27 +714,10 @@ class VICS_Events {
         $now = new DateTime('now', $this->get_pacific_timezone());
         $current_month = $now->format('m');
         $current_year = $now->format('Y');
+        $month_start = $current_year . '-' . $current_month . '-01';
+        $month_end = $now->format('Y-m-t');
 
-        $args = array(
-            'post_type' => 'events',
-            'posts_per_page' => -1,
-            'meta_query' => array(
-                array(
-                    'key' => '_event_start_date',
-                    'value' => $current_year . '-' . $current_month . '-01',
-                    'compare' => '>=',
-                    'type' => 'DATE'
-                ),
-                array(
-                    'key' => '_event_start_date',
-                    'value' => $current_year . '-' . $current_month . '-31',
-                    'compare' => '<=',
-                    'type' => 'DATE'
-                )
-            )
-        );
-
-        return get_posts($args);
+        return $this->get_occurrence_entries($month_start, $month_end);
     }
 
     /**
@@ -551,29 +728,7 @@ class VICS_Events {
         $start_of_week = $week_range['start'];
         $end_of_week = $week_range['end'];
 
-        $args = array(
-            'post_type' => 'events',
-            'posts_per_page' => 4,
-            'meta_key' => '_event_start_date',
-            'orderby' => 'meta_value',
-            'order' => 'ASC',
-            'meta_query' => array(
-                array(
-                    'key' => '_event_start_date',
-                    'value' => $start_of_week,
-                    'compare' => '>=',
-                    'type' => 'DATE'
-                ),
-                array(
-                    'key' => '_event_start_date',
-                    'value' => $end_of_week,
-                    'compare' => '<=',
-                    'type' => 'DATE'
-                )
-            )
-        );
-
-        return get_posts($args);
+        return $this->get_occurrence_entries($start_of_week, $end_of_week, '', 4);
     }
 
     /**
@@ -608,11 +763,10 @@ class VICS_Events {
         $event_days = array();
 
         foreach ($month_events as $event) {
-            $event_date = get_post_meta($event->ID, '_event_start_date', true);
-            if ($event_date) {
-                $event_date_obj = new DateTime($event_date, $this->get_pacific_timezone());
+            if (!empty($event['occurrence_date'])) {
+                $event_date_obj = new DateTime($event['occurrence_date'], $this->get_pacific_timezone());
                 $day = $event_date_obj->format('j');
-                $event_days[] = (int)$day;
+                $event_days[] = (int) $day;
             }
         }
 
@@ -665,26 +819,13 @@ class VICS_Events {
 
         $search_term = sanitize_text_field($_POST['search_term']);
 
-        $args = array(
-            'post_type' => 'events',
-            'posts_per_page' => 8,
-            's' => $search_term,
-            'meta_query' => array(
-                array(
-                    'key' => '_event_start_date',
-                    'value' => $this->get_pacific_today(),
-                    'compare' => '>=',
-                    'type' => 'DATE'
-                )
-            )
-        );
-
-        $events = get_posts($args);
+        $events = $this->get_occurrence_entries($this->get_pacific_today(), '', $search_term, 8);
         $html = '';
 
         foreach ($events as $event) {
-            $event_id = $event->ID;
-            $start_date = get_post_meta($event_id, '_event_start_date', true);
+            $event_id = $event['event_id'];
+            $event_post = $event['post'];
+            $start_date = $event['occurrence_date'];
             $start_time = get_post_meta($event_id, '_event_start_time', true);
             $event_type = get_post_meta($event_id, '_event_type', true);
             $virtual_link = get_post_meta($event_id, '_event_virtual_link', true);
@@ -708,7 +849,7 @@ class VICS_Events {
             }
             $html .= '</div>';
             $html .= '<div class="event-details">';
-            $html .= '<h3><a href="' . get_permalink($event_id) . '">' . get_the_title($event_id) . '</a></h3>';
+            $html .= '<h3><a href="' . get_permalink($event_id) . '">' . esc_html(get_the_title($event_post)) . '</a></h3>';
             $html .= '<p class="time">' . $time_display . '</p>';
             $html .= '<p class="description">' . $this->trim_excerpt($event_id, 10) . '</p>';
             $html .= '</div>';
