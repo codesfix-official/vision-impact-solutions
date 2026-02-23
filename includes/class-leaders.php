@@ -88,6 +88,7 @@ class VICS_Leaders {
         $email = get_post_meta($post->ID, '_leader_email', true);
         $social_linkedin = get_post_meta($post->ID, '_leader_social_linkedin', true);
         $social_twitter = get_post_meta($post->ID, '_leader_social_twitter', true);
+        $showcase_leader = get_post_meta($post->ID, '_leader_showcase', true) === '1';
 
         ?>
         <table class="form-table">
@@ -121,6 +122,15 @@ class VICS_Leaders {
                     <input type="url" id="leader_social_twitter" name="leader_social_twitter" value="<?php echo esc_url($social_twitter); ?>" placeholder="https://twitter.com/..." style="width: 100%; padding: 8px;">
                 </td>
             </tr>
+            <tr>
+                <th><label for="leader_showcase"><?php _e('Showcase Leader', 'vics'); ?></label></th>
+                <td>
+                    <label>
+                        <input type="checkbox" id="leader_showcase" name="leader_showcase" value="1" <?php checked($showcase_leader); ?>>
+                        <?php _e('Show this leader in the showcase section', 'vics'); ?>
+                    </label>
+                </td>
+            </tr>
         </table>
         <?php
     }
@@ -137,6 +147,8 @@ class VICS_Leaders {
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
+
+        update_post_meta($post_id, '_leader_showcase', isset($_POST['leader_showcase']) ? '1' : '0');
 
         $fields = array(
             'leader_position',
@@ -217,41 +229,69 @@ class VICS_Leaders {
         );
 
         $leaders = get_posts($args);
+        $showcase_leaders = array();
+        $remaining_leaders = array();
+
+        foreach ($leaders as $leader) {
+            if (get_post_meta($leader->ID, '_leader_showcase', true) === '1') {
+                $showcase_leaders[] = $leader;
+            } else {
+                $remaining_leaders[] = $leader;
+            }
+        }
+
+        $render_leader_card = function ($leader) {
+            $leader_id = $leader->ID;
+            $position = get_post_meta($leader_id, '_leader_position', true);
+            $featured_image = get_the_post_thumbnail_url($leader_id, 'large');
+            ?>
+            <div class="leader-card">
+                <div class="leader-image">
+                    <a href="<?php echo get_permalink($leader_id); ?>" class="leader-image-link">
+                        <?php if ($featured_image) : ?>
+                            <img src="<?php echo esc_url($featured_image); ?>" alt="<?php echo esc_attr(get_the_title($leader_id)); ?>">
+                        <?php else : ?>
+                            <div class="leader-image-placeholder">
+                                <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                                    <rect fill="#e0e0e0" width="200" height="200"/>
+                                    <circle cx="100" cy="70" r="30" fill="#999"/>
+                                    <path d="M 60 150 Q 60 130 100 130 Q 140 130 140 150 L 140 200 L 60 200 Z" fill="#999"/>
+                                </svg>
+                            </div>
+                        <?php endif; ?>
+                    </a>
+                </div>
+                <div class="leader-info">
+                    <h3><a href="<?php echo get_permalink($leader_id); ?>"><?php echo get_the_title($leader_id); ?></a> <span class="leader-arrow">→</span></h3>
+                    <?php if ($position) : ?>
+                        <p class="leader-position"><?php echo esc_html($position); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php
+        };
 
         ?>
         <div class="leaders-grid-wrapper">
-            <div class="leaders-grid">
-                <?php foreach ($leaders as $leader) : ?>
-                    <?php
-                    $leader_id = $leader->ID;
-                    $position = get_post_meta($leader_id, '_leader_position', true);
-                    $featured_image = get_the_post_thumbnail_url($leader_id, 'large');
-                    ?>
-                    <div class="leader-card">
-                        <div class="leader-image">
-                            <a href="<?php echo get_permalink($leader_id); ?>" class="leader-image-link">
-                                <?php if ($featured_image) : ?>
-                                    <img src="<?php echo esc_url($featured_image); ?>" alt="<?php echo esc_attr(get_the_title($leader_id)); ?>">
-                                <?php else : ?>
-                                    <div class="leader-image-placeholder">
-                                        <svg width="100%" height="100%" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                                            <rect fill="#e0e0e0" width="200" height="200"/>
-                                            <circle cx="100" cy="70" r="30" fill="#999"/>
-                                            <path d="M 60 150 Q 60 130 100 130 Q 140 130 140 150 L 140 200 L 60 200 Z" fill="#999"/>
-                                        </svg>
-                                    </div>
-                                <?php endif; ?>
-                            </a>
-                        </div>
-                        <div class="leader-info">
-                            <h3><a href="<?php echo get_permalink($leader_id); ?>"><?php echo get_the_title($leader_id); ?></a> <span class="leader-arrow">→</span></h3>
-                            <?php if ($position) : ?>
-                                <p class="leader-position"><?php echo esc_html($position); ?></p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+            <?php if (!empty($showcase_leaders)) : ?>
+                <h2><?php //_e('Showcase Leaders', 'vics'); ?></h2>
+                <div class="leaders-grid leaders-showcase-grid">
+                    <?php foreach ($showcase_leaders as $leader) : ?>
+                        <?php $render_leader_card($leader); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($remaining_leaders)) : ?>
+                <?php if (!empty($showcase_leaders)) : ?>
+                    <h2><?php //_e('All Leaders', 'vics'); ?></h2>
+                <?php endif; ?>
+                <div class="leaders-grid">
+                    <?php foreach ($remaining_leaders as $leader) : ?>
+                        <?php $render_leader_card($leader); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
 
