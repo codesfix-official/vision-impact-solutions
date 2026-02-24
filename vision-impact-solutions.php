@@ -153,6 +153,7 @@ final class Vision_Impact_Custom_Solutions {
         
         // Shortcodes
         add_shortcode('agent_profile', array($this, 'render_profile_page'));
+        add_shortcode('vics_logout_link', array($this, 'render_logout_link'));
         
         // Run database migrations on admin init
         add_action('admin_init', array($this, 'check_and_migrate_database'));
@@ -539,7 +540,6 @@ final class Vision_Impact_Custom_Solutions {
             'formSubmitted' => (bool) ($progress['form_submitted'] ?? false),
             'videoCompleted' => (bool) ($progress['video_completed'] ?? false),
             'completionThreshold' => intval(get_option('vics_video_completion_threshold', 95)),
-            'testingMode' => (bool) intval(get_option('vics_orientation_testing_mode', '0')),
             'welcomeMessage' => get_option('vics_welcome_message'),
             'profileUrl' => home_url('/my-profile')
         ));
@@ -662,6 +662,38 @@ final class Vision_Impact_Custom_Solutions {
         include VICS_PLUGIN_PATH . 'templates/profile-page.php';
         return ob_get_clean();
     }
+
+    /**
+     * Render logout link shortcode.
+     * Usage: [vics_logout_link] or [vics_logout_link text="Logout" redirect="/" class="btn btn-secondary"]
+     */
+    public function render_logout_link($atts = array()) {
+        if (!is_user_logged_in()) {
+            return '';
+        }
+
+        $atts = shortcode_atts(array(
+            'text' => __('Logout', 'vics'),
+            'redirect' => home_url('/'),
+            'class' => 'btn btn-secondary'
+        ), $atts, 'vics_logout_link');
+
+        $link_text = sanitize_text_field($atts['text']);
+        $redirect_url = esc_url_raw($atts['redirect']);
+        if (empty($redirect_url)) {
+            $redirect_url = home_url('/');
+        }
+
+        $logout_url = wp_logout_url($redirect_url);
+        $class_attr = trim(sanitize_text_field($atts['class']));
+
+        return sprintf(
+            '<a href="%1$s"%2$s>%3$s</a>',
+            esc_url($logout_url),
+            $class_attr !== '' ? ' class="' . esc_attr($class_attr) . '"' : '',
+            esc_html($link_text)
+        );
+    }
 }
 
 /**
@@ -761,7 +793,6 @@ function vics_set_default_options() {
         'vics_welcome_message' => __('Welcome Onboard! You have successfully completed the orientation.', 'vics'),
         'vics_disclosure_text' => __('By accessing and using the tools, training, systems, and resources provided on this website, you acknowledge that there is no guarantee of success, income, or specific results. These resources are intended to support your development, but your success depends entirely on your personal effort, discipline, consistency, and ability to take action. You understand and agree that you are solely responsible for your own performance and outcomes as an independent agent, and results will vary based on individual commitment and execution.', 'vics'),
         'vics_video_completion_threshold' => 100,
-        'vics_orientation_testing_mode' => '0',
     );
     
     foreach ($orientation_defaults as $key => $value) {

@@ -13,11 +13,6 @@
         progressInterval: null,
         pendingAutoplay: false,
 
-        isTestingModeEnabled: function() {
-            var value = vicsOrientationData.testingMode;
-            return value === true || value === 1 || value === '1';
-        },
-
         init: function() {
             this.pendingAutoplay = $('#vics-step-video').hasClass('active');
             this.bindEvents();
@@ -420,10 +415,6 @@
                     completionThreshold = 100;
                 }
 
-                if (this.isTestingModeEnabled()) {
-                    completionThreshold = 0;
-                }
-
                 if (progress >= completionThreshold) {
                     this.markVideoComplete();
                 }
@@ -476,12 +467,6 @@
         showVideoStep: function() {
             $('#vics-step-form').removeClass('active');
             $('#vics-step-video').addClass('active');
-
-            if (this.isTestingModeEnabled()) {
-                this.markVideoComplete();
-                return;
-            }
-
             this.pendingAutoplay = true;
             this.autoPlayCurrentVideo();
         },
