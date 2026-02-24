@@ -13,6 +13,11 @@
         progressInterval: null,
         pendingAutoplay: false,
 
+        isTestingModeEnabled: function() {
+            var value = vicsOrientationData.testingMode;
+            return value === true || value === 1 || value === '1';
+        },
+
         init: function() {
             this.pendingAutoplay = $('#vics-step-video').hasClass('active');
             this.bindEvents();
@@ -404,9 +409,21 @@
         checkCompletion: function(currentTime, duration) {
             if (duration > 0) {
                 var progress = (currentTime / duration) * 100;
-                // Require 99% completion (essentially the full video) before allowing completion
-                // This allows a small buffer for video rounding but forces watching the entire content
-                var completionThreshold = 99;
+                var completionThreshold = parseInt(vicsOrientationData.completionThreshold, 10);
+                if (isNaN(completionThreshold)) {
+                    completionThreshold = 95;
+                }
+
+                if (completionThreshold < 0) {
+                    completionThreshold = 0;
+                } else if (completionThreshold > 100) {
+                    completionThreshold = 100;
+                }
+
+                if (this.isTestingModeEnabled()) {
+                    completionThreshold = 0;
+                }
+
                 if (progress >= completionThreshold) {
                     this.markVideoComplete();
                 }
@@ -459,6 +476,12 @@
         showVideoStep: function() {
             $('#vics-step-form').removeClass('active');
             $('#vics-step-video').addClass('active');
+
+            if (this.isTestingModeEnabled()) {
+                this.markVideoComplete();
+                return;
+            }
+
             this.pendingAutoplay = true;
             this.autoPlayCurrentVideo();
         },

@@ -45,11 +45,11 @@ if (!empty($profile['profile_photo_id'])) {
     $avatar_url = wp_get_attachment_image_url($profile['profile_photo_id'], 'thumbnail');
 }
 
-// LMS Progress - Get real course data from Tutor LMS
-$lms_progress = VICS_Tutor_LMS_Integration::get_user_progress($user_id);
+// LMS Progress - Get real course data from active LMS provider (LearnDash/Tutor)
+$lms_progress = VICS_LMS_Integration::get_user_progress($user_id);
 $lms_modules = array();
 
-// Add actual Tutor LMS courses
+// Add actual LMS courses
 if (!empty($lms_progress['courses'])) {
     foreach ($lms_progress['courses'] as $course) {
         $lms_modules[] = array(
@@ -394,7 +394,7 @@ $license_expiry = $primary_license ? $primary_license['expiry_date'] : '';
                     <p style="text-align: center; color: #666; padding: 20px;">No courses enrolled yet.</p>
                 <?php endif; ?>
             </div>
-            <button class="btn btn-primary" style="margin-top: 20px;" onclick="window.location.href='<?php echo esc_url(VICS_Tutor_LMS_Integration::get_dashboard_url()); ?>'">
+            <button class="btn btn-primary" style="margin-top: 20px;" onclick="window.location.href='<?php echo esc_url(VICS_LMS_Integration::get_dashboard_url()); ?>'">
                 Go To LMS
             </button>
         </div>

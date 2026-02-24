@@ -115,7 +115,12 @@ class VICS_Admin_Settings {
         register_setting('vics_orientation_settings', 'vics_disclosure_text', array(
             'sanitize_callback' => 'sanitize_textarea_field'
         ));
-        register_setting('vics_orientation_settings', 'vics_video_completion_threshold');
+        register_setting('vics_orientation_settings', 'vics_video_completion_threshold', array(
+            'sanitize_callback' => array($this, 'sanitize_video_completion_threshold')
+        ));
+        register_setting('vics_orientation_settings', 'vics_orientation_testing_mode', array(
+            'sanitize_callback' => array($this, 'sanitize_checkbox_option')
+        ));
         register_setting('vics_orientation_settings', 'vics_playbook_url');
         register_setting('vics_orientation_settings', 'vics_list_items', array(
             'type' => 'array',
@@ -191,6 +196,30 @@ class VICS_Admin_Settings {
         }
 
         return $sanitized;
+    }
+
+    /**
+     * Sanitize orientation video completion threshold (0-100)
+     */
+    public function sanitize_video_completion_threshold($value) {
+        $threshold = intval($value);
+
+        if ($threshold < 0) {
+            $threshold = 0;
+        }
+
+        if ($threshold > 100) {
+            $threshold = 100;
+        }
+
+        return $threshold;
+    }
+
+    /**
+     * Sanitize checkbox option values as 1/0
+     */
+    public function sanitize_checkbox_option($value) {
+        return (!empty($value) && $value !== '0') ? '1' : '0';
     }
     
     /**
@@ -275,7 +304,18 @@ class VICS_Admin_Settings {
                                 <input type="number" name="vics_video_completion_threshold" 
                                        id="vics_video_completion_threshold" 
                                        value="<?php echo esc_attr(get_option('vics_video_completion_threshold', 95)); ?>" 
-                                       min="50" max="100" class="small-text" />
+                                        min="0" max="100" class="small-text" />
+                                    <p class="description"><?php _e('Set to 0-100. For testing, 0 allows immediate completion.', 'vics'); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="vics_orientation_testing_mode"><?php _e('Testing Mode', 'vics'); ?></label></th>
+                            <td>
+                                <label>
+                                    <input type="hidden" name="vics_orientation_testing_mode" value="0" />
+                                    <input type="checkbox" name="vics_orientation_testing_mode" id="vics_orientation_testing_mode" value="1" <?php checked(get_option('vics_orientation_testing_mode', '0'), '1'); ?> />
+                                    <?php _e('Enable testing mode (treat video completion threshold as 0% without changing saved threshold)', 'vics'); ?>
+                                </label>
                             </td>
                         </tr>
                         <tr>

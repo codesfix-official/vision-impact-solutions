@@ -21,6 +21,68 @@ class VICS_Profile_Handler {
         add_action('wp_ajax_vics_upload_avatar', array($this, 'upload_avatar'));
         add_action('wp_ajax_vics_update_social_links', array($this, 'update_social_links'));
         add_action('wp_ajax_vics_update_password', array($this, 'update_password'));
+
+        // Unify WordPress avatar output with VICS uploaded profile image (used by LearnDash [ld_profile] too)
+        add_filter('get_avatar_data', array($this, 'filter_avatar_data'), 10, 2);
+    }
+
+    /**
+     * Resolve user ID from get_avatar() input.
+     *
+     * @param mixed $id_or_email
+     * @return int
+     */
+    private function resolve_user_id_from_avatar_input($id_or_email) {
+        if (is_numeric($id_or_email)) {
+            return absint($id_or_email);
+        }
+
+        if (is_object($id_or_email) && !empty($id_or_email->user_id)) {
+            return absint($id_or_email->user_id);
+        }
+
+        if ($id_or_email instanceof WP_User) {
+            return absint($id_or_email->ID);
+        }
+
+        if (is_string($id_or_email) && is_email($id_or_email)) {
+            $user = get_user_by('email', $id_or_email);
+            if ($user) {
+                return absint($user->ID);
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Replace default avatar URL with VICS profile image if available.
+     *
+     * @param array $args
+     * @param mixed $id_or_email
+     * @return array
+     */
+    public function filter_avatar_data($args, $id_or_email) {
+        $user_id = $this->resolve_user_id_from_avatar_input($id_or_email);
+        if ($user_id <= 0) {
+            return $args;
+        }
+
+        $profile = VICS_Database::get_profile($user_id);
+        $photo_id = !empty($profile['profile_photo_id']) ? absint($profile['profile_photo_id']) : 0;
+        if ($photo_id <= 0) {
+            return $args;
+        }
+
+        $size = !empty($args['size']) ? absint($args['size']) : 96;
+        $avatar_url = wp_get_attachment_image_url($photo_id, array($size, $size));
+
+        if (!empty($avatar_url)) {
+            $args['url'] = $avatar_url;
+            $args['found_avatar'] = true;
+        }
+
+        return $args;
     }
 
     /**

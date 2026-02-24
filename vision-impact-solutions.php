@@ -115,8 +115,10 @@ final class Vision_Impact_Custom_Solutions {
         // License Module
         require_once VICS_PLUGIN_PATH . 'includes/class-license-handler.php';
         
-        // Tutor LMS Integration
+        // LMS Integrations
         require_once VICS_PLUGIN_PATH . 'includes/class-tutor-lms-integration.php';
+        require_once VICS_PLUGIN_PATH . 'includes/class-learndash-lms-integration.php';
+        require_once VICS_PLUGIN_PATH . 'includes/class-lms-integration.php';
         
         // Google Integration
         require_once VICS_PLUGIN_PATH . 'includes/class-google-auth.php';
@@ -222,8 +224,12 @@ final class Vision_Impact_Custom_Solutions {
         // License
         new VICS_License_Handler();
         
-        // Tutor LMS
-        new VICS_Tutor_LMS_Integration();
+        // LMS Integration (prefer LearnDash when active, keep Tutor as fallback)
+        if (VICS_LearnDash_LMS_Integration::is_active()) {
+            new VICS_LearnDash_LMS_Integration();
+        } else {
+            new VICS_Tutor_LMS_Integration();
+        }
         
         // Google Integration
         new VICS_Google_Sync();
@@ -533,6 +539,7 @@ final class Vision_Impact_Custom_Solutions {
             'formSubmitted' => (bool) ($progress['form_submitted'] ?? false),
             'videoCompleted' => (bool) ($progress['video_completed'] ?? false),
             'completionThreshold' => intval(get_option('vics_video_completion_threshold', 95)),
+            'testingMode' => (bool) intval(get_option('vics_orientation_testing_mode', '0')),
             'welcomeMessage' => get_option('vics_welcome_message'),
             'profileUrl' => home_url('/my-profile')
         ));
@@ -754,6 +761,7 @@ function vics_set_default_options() {
         'vics_welcome_message' => __('Welcome Onboard! You have successfully completed the orientation.', 'vics'),
         'vics_disclosure_text' => __('By accessing and using the tools, training, systems, and resources provided on this website, you acknowledge that there is no guarantee of success, income, or specific results. These resources are intended to support your development, but your success depends entirely on your personal effort, discipline, consistency, and ability to take action. You understand and agree that you are solely responsible for your own performance and outcomes as an independent agent, and results will vary based on individual commitment and execution.', 'vics'),
         'vics_video_completion_threshold' => 100,
+        'vics_orientation_testing_mode' => '0',
     );
     
     foreach ($orientation_defaults as $key => $value) {
