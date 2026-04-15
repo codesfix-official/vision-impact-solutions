@@ -1,165 +1,161 @@
-# Vision Impact Custom Solutions
+# Vision Impact Solutions
 
-Complete agent management system with orientation, profile management, license tracking, and Google Workspace API integration.
+WordPress plugin for agent onboarding and operations, including orientation gating, profile and license management, leaders/events content modules, LMS progress integration, and Google Sheets template provisioning.
 
-## Features
+## Version
 
-- **Agent Orientation System**: Interactive video-based orientation with progress tracking
-- **Profile Management**: Comprehensive agent profile with social media integration
-- **License Tracking**: Full license management system with status tracking
-- **Google Sheets Integration**: Automatic sync of agent data to personal Google Sheets
-- **Master Tracker**: Admin dashboard showing all agents with birthday reminders
+- Current plugin version: 1.2.2
+- PHP requirement: 7.4+
 
-## Google Sheets Integration
+## Core Functionality
 
-### Requirements
+### 1) Agent orientation workflow
 
-Each new member automatically gets a dedicated Google Sheet (clone of master sheet). Any profile or tracker updates sync automatically to their personal sheet. Admins receive a master tracker showing all agents with automatic birthday reminders (2 days before).
+- Shows a disclosure popup and orientation flow for logged-in non-admin users who have not completed onboarding.
+- Supports YouTube, Vimeo, and direct HTML5 video URLs.
+- Tracks orientation progress in a custom DB table (timestamp, completion status, form state).
+- Enforces configurable video completion threshold before marking orientation complete.
 
-### Setup Instructions
+### 2) Agent profile management
 
-1. **Install Dependencies**
+- Frontend profile page via shortcode with editable personal/contact/social fields.
+- Avatar upload support and password update endpoints.
+- Dynamic "About You" questions configurable by admins.
+- Profile data stored in custom profile table linked to WordPress users.
+
+### 3) License management
+
+- Agents can create/update/delete their own licenses.
+- Admins can review and manage licenses from a dedicated management page.
+- Status-based tracking (active/pending/expired/rejected) with reporting in admin views.
+
+### 4) Leaders and events content modules
+
+- Registers two custom post types:
+  - `leaders`
+  - `events`
+- Includes admin meta boxes for leader/event details.
+- Provides archive/single templates and frontend styles.
+- Includes event search AJAX endpoint and recurring event handling logic.
+
+### 5) LMS integration
+
+- Provider abstraction layer with auto-detection.
+- Prefers LearnDash when active; uses Tutor LMS as fallback.
+- Exposes enrolled courses/progress data for profile page display.
+
+### 6) Google integration
+
+- OAuth-based Google connection (Sheets + Drive).
+- On new `agent` user registration, creates a personal sheet by cloning the configured master template.
+- Stores generated sheet ID in the agent profile record.
+
+Important behavior:
+
+- This plugin currently clones and provisions sheets only.
+- It does not perform ongoing profile-to-sheet live sync.
+
+### 7) Birthday reminders
+
+- Daily cron job checks for upcoming agent birthdays.
+- Displays admin notices for birthdays in the next 7 days.
+- Sends email reminder to site admin for birthdays exactly 2 days away.
+
+## Admin Area
+
+Main menu: Vision Impact
+
+Available sections:
+
+- Orientation
+- Profile
+- Questions
+- Google Sheets
+- Upcoming Birthdays
+- Debug
+- All Agents
+- Orientation Report
+- License Management
+
+Admin can also:
+
+- Approve or reject pending agent codes.
+- Reset orientation state per user.
+- Trigger Google auth/sheet-related actions from settings UI.
+
+## Shortcodes
+
+- `[agent_profile]` - renders the agent profile experience.
+- `[vics_logout_link]` - renders customizable logout link for logged-in users.
+- `[events_archive]` - renders events archive UI.
+- `[leaders_grid]` - renders leaders listing/grid.
+
+## Database Tables
+
+The plugin creates and migrates these custom tables:
+
+- `wp_vics_orientation_progress`
+- `wp_vics_agent_profile`
+- `wp_vics_agent_licenses`
+
+## Installation
+
+1. Place plugin in WordPress plugins directory:
+   - `/wp-content/plugins/vision-impact-solutions/`
+2. Install dependencies:
+
    ```bash
    composer install
    ```
 
-2. **Google Cloud Console Setup**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing one
-   - Enable the following APIs:
-     - Google Sheets API
-     - Google Drive API
+3. Activate the plugin in WordPress admin.
+4. After activation, the plugin automatically:
+   - creates required DB tables
+   - creates `agent` role
+   - creates `my-profile` page with `[agent_profile]`
 
-3. **Create OAuth 2.0 Credentials**
-   - Go to "APIs & Credentials" > "Credentials"
-   - Click "Create Credentials" > "OAuth 2.0 Client IDs"
-   - Choose "Web application"
-   - Add authorized redirect URIs (must match exactly):
-     - `https://yourdomain.com/wp-admin/admin.php?page=vics-settings&tab=google`
-   - Copy the Client ID and Client Secret
+## Google Setup
 
-   Note: The plugin now uses a WP nonce embedded into the OAuth `state` parameter for callback verification. If you see the auth callback return without connecting, please ensure the redirect URI configured in Google matches exactly and retry the Connect flow from the plugin settings page.
+1. In Google Cloud Console, enable:
+   - Google Sheets API
+   - Google Drive API
+2. Create OAuth 2.0 Web credentials.
+3. Add exact redirect URI:
 
-If Connect still fails, check for the stored token by running:
+   ```
+   https://your-domain.com/wp-admin/admin.php?page=vics-settings&tab=google
+   ```
+
+4. In WordPress admin (Vision Impact > Google Sheets), set:
+   - Google Client ID
+   - Google Client Secret
+   - Master Sheet ID
+5. Connect account and verify authentication success.
+
+If authentication appears stale, you can inspect or remove the stored token with WP-CLI:
 
 ```bash
 wp option get vics_google_access_token
-```
-
-Or remove any stale token and retry:
-
-```bash
 wp option delete vics_google_access_token
 ```
 
-If you don't have WP-CLI, you can temporarily inspect or delete the `vics_google_access_token` option using a small PHP snippet in the admin (or use a DB tool to inspect the `wp_options` table).
+## Security Notes
 
-4. **Configure Plugin Settings**
-   - Go to WordPress Admin > Vision Impact > Google Sheets
-   - Enter your Client ID and Client Secret
-   - Enter your Master Sheet ID (the template sheet to clone)
-   - Click "Connect to Google" to authorize the application
-   - **Important:** Note the "Authenticated Account" email shown after connecting
+- AJAX endpoints use nonce checks for orientation, profile, license, and admin actions.
+- Most user actions require login; admin actions require `manage_options`.
+- Inputs are sanitized before DB writes.
 
-5. **Create Master Sheet Template**
-   - Create a Google Sheet with the following structure:
-   ```
-   A1: Full Name
-   B1: Email
-   C1: Phone
-   D1: Agent Code
-   E1: NPN
-   F1: License Number
-   G1: Date of Birth
-   H1: City
-   I1: State
-   J1: Goals for Year
-   K1: Experience Level
-   L1: Facebook
-   M1: Instagram
-   N1: Twitter
-   O1: TikTok
-   P1: YouTube
-   Q1: LinkedIn
-   ```
-   - Share the master sheet with the authenticated account email (shown in plugin settings)
-   - Give it "Editor" permissions
+## Troubleshooting
 
-6. **User Sheet Sharing**
-   - When users enter their Google Sheet ID in their profile, they must share that sheet with the authenticated account email
-   - Users can share their sheet by: Sheet > Share > Enter the authenticated email > Set as "Editor"
+- If Google auth fails, verify redirect URI exactly matches configured value.
+- If agent sheets are not created, verify:
+  - user has `agent` role
+  - master sheet ID is configured
+  - Google APIs are enabled
+  - plugin is authenticated with Google
+- If plugin routes do not resolve for leaders/events, re-save permalinks or reactivate plugin to refresh rewrite rules.
 
-### How It Works
+## Development Notes
 
-1. **New Agent Registration**: When a new user registers, the system automatically:
-   - Creates a copy of the master sheet
-   - Names it "[Agent Name] - Agent Tracker"
-   - Pre-fills it with the agent's current profile data
-   - Stores the sheet ID in the agent's profile
-
-2. **Profile Updates**: Any changes to agent profiles automatically sync to:
-   - Their personal sheet (with timestamp)
-   - The master tracker sheet
-
-3. **Master Tracker**: Admins can manually sync all agent data to the master tracker sheet
-
-4. **Clone Master Sheet**: Admins can create additional copies of the master sheet for backup, regional tracking, or other purposes
-
-5. **Birthday Reminders**: The system checks daily for agents with birthdays in 2 days and:
-   - Shows notices in the WordPress admin
-   - Sends email notifications to admins
-
-### Current Limitations
-
-- **Sheet Sharing Required**: Users must manually share their Google Sheets with the authenticated admin account email for sync to work
-- **Single Admin Account**: Currently uses one Google account for all sheet operations (per-user OAuth planned for future updates)
-
-### User Instructions
-
-**For Users (Agents):**
-1. Register for an account on the website
-2. Your personal Google Sheet will be automatically created with your current profile data
-3. Share your Google Sheet with the admin account email shown in the profile notice
-4. Set the admin as "Editor" permissions
-5. Your profile updates will automatically sync to your sheet with timestamps
-
-**For Admins:**
-1. Connect your Google account in the plugin settings
-2. Note the authenticated email address displayed
-3. Create a master sheet template with headers A1:R1
-4. Enter the master sheet ID in plugin settings
-5. New agents will automatically get their own sheets when they register
-6. Use "Sync to Master Tracker" to populate the master sheet with all agent data
-7. Use "Clone Sheet" to create additional copies of the master sheet
-
-### Troubleshooting
-
-- **Authentication Issues**: Ensure redirect URI matches exactly in Google Cloud Console
-- **Re-authentication Required**: If you see a "Re-authentication Required" notice, disconnect and reconnect your Google account to update permissions
-- **Permission Errors**: Users must share their Google Sheets with the authenticated account email shown in plugin settings
-- **Sheet Not Found**: Verify the Google Sheet ID is correct and the sheet exists
-- **Sync Failures**: Check that all required APIs are enabled and credentials are correct
-- **Database Errors**: Run the plugin activation again to ensure all tables are created
-
-## Installation
-
-1. Upload the plugin files to `/wp-content/plugins/vision-impact-custom-solutions/`
-2. Activate the plugin through the WordPress admin
-3. Configure settings as needed
-4. Set up Google Sheets integration following the instructions above
-
-## Requirements
-
-- WordPress 5.0+
-- PHP 7.4+
-- MySQL 5.6+
-- Composer (for Google API dependencies)
-
-## Changelog
-
-### 1.0.0
-- Initial release
-- Agent orientation system
-- Profile management
-- License tracking
-- Google Sheets integration
+- Composer packages are required for Google API classes.
+- Debug logging is available when WordPress debug mode is enabled and plugin debug setting is turned on.
